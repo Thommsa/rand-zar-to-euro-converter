@@ -63,7 +63,6 @@
   }
   .status-dot.live{ background: var(--teal); box-shadow: 0 0 0 3px rgba(79,168,160,0.18); }
   .status-dot.cached{ background: var(--gold); box-shadow: 0 0 0 3px rgba(212,162,76,0.18); }
-
   .field{
     background: var(--panel-2);
     border: 1px solid var(--border);
@@ -94,7 +93,6 @@
   .field input::placeholder{ color: #4a5b7a; }
   .field-eur input{ color: var(--gold); }
   .field input:focus{ color: var(--teal); }
-
   .swap-row{
     display:flex;
     align-items:center;
@@ -124,7 +122,6 @@
     transition: transform 0.15s ease, border-color 0.15s ease;
   }
   .swap-btn:active{ transform: rotate(180deg) scale(0.92); }
-
   .rate-pill{
     margin-top: 18px;
     display:flex;
@@ -140,7 +137,6 @@
     color: var(--text-mute);
   }
   .rate-pill .rate-value{ color: var(--text); }
-
   .meta{
     margin-top: 12px;
     font-size: 11.5px;
@@ -164,7 +160,6 @@
   }
   .refresh-btn:active{ background: rgba(79,168,160,0.08); }
   .refresh-btn:disabled{ opacity: 0.5; }
-
   .error-banner{
     display:none;
     margin-top: 12px;
@@ -176,7 +171,6 @@
     font-size: 12.5px;
     text-align:center;
   }
-
   .coffee-btn{
     display:block;
     margin-top: 16px;
@@ -203,10 +197,8 @@
 </style>
 </head>
 <body>
-
 <div class="card">
   <p class="eyebrow"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking rate…</span></p>
-
   <div class="field">
     <label for="zarInput">South African Rand</label>
     <div class="field-row">
@@ -215,11 +207,9 @@
       <span>ZAR</span>
     </div>
   </div>
-
   <div class="swap-row">
     <button class="swap-btn" id="clearBtn" aria-label="Clear both fields" title="Clear">↻</button>
   </div>
-
   <div class="field field-eur">
     <label for="eurInput">Euro</label>
     <div class="field-row">
@@ -228,30 +218,23 @@
       <span>EUR</span>
     </div>
   </div>
-
   <div class="rate-pill">
     <span>Rate</span>
     <span class="rate-value" id="rateValue">—</span>
   </div>
-
   <p class="meta" id="metaText">Loading last known rate…</p>
-
   <button class="refresh-btn" id="refreshBtn">Refresh rate</button>
   <div class="error-banner" id="errorBanner"></div>
-
   <a class="coffee-btn" href="https://buy.stripe.com/fZu8wR7ZZgmk32X4YK8k800" target="_blank" rel="noopener">Buy Thomas a coffee ☕</a>
 </div>
-
 <script>
-const API_URL = "https://api.frankfurter.app/latest?from=ZAR&to=EUR";
-const STORAGE_KEY = "zar_eur_rate_cache_v1";
-const FALLBACK_RATE = 0.0525;
-const FALLBACK_DATE = "2026-07-27T00:00:00Z";
-
+const API_URL = "https://api.frankfurter.dev/v1/latest?from=ZAR&to=EUR";
+const STORAGE_KEY = "zar_eur_rate_cache_v2";
+const FALLBACK_RATE = 0.05339;
+const FALLBACK_DATE = "2026-09-11T00:00:00Z";
 let currentRate = null;
 let rateTimestamp = null;
 let isFallback = false;
-
 const zarInput    = document.getElementById("zarInput");
 const eurInput    = document.getElementById("eurInput");
 const clearBtn    = document.getElementById("clearBtn");
@@ -261,22 +244,15 @@ const statusText  = document.getElementById("statusText");
 const rateValue   = document.getElementById("rateValue");
 const metaText    = document.getElementById("metaText");
 const errorBanner = document.getElementById("errorBanner");
-
 function saveCache(rate, timestamp) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ rate, timestamp }));
-  } catch (e) {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ rate, timestamp })); } catch (e) {}
 }
-
 function loadCache() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
+  } catch (e) { return null; }
 }
-
 function formatTimestamp(iso) {
   const d = new Date(iso);
   const now = new Date();
@@ -285,43 +261,31 @@ function formatTimestamp(iso) {
   if (sameDay) return `today at ${timeStr}`;
   return `${d.toLocaleDateString([], { day: "numeric", month: "short" })} at ${timeStr}`;
 }
-
 function setStatus(mode, text) {
   const cls = mode === "live" ? " live" : (mode === "cached" || mode === "fallback") ? " cached" : "";
   statusDot.className = "status-dot" + cls;
   statusText.textContent = text;
 }
-
 function showError(msg) {
   errorBanner.textContent = msg;
   errorBanner.style.display = "block";
 }
-function clearError() {
-  errorBanner.style.display = "none";
-}
-
+function clearError() { errorBanner.style.display = "none"; }
 function convertFromZar() {
   if (currentRate == null) return;
   const raw = parseFloat(zarInput.value);
   eurInput.value = isNaN(raw) ? "" : (raw * currentRate).toFixed(2);
 }
-
 function convertFromEur() {
   if (currentRate == null) return;
   const raw = parseFloat(eurInput.value);
   zarInput.value = isNaN(raw) ? "" : (raw / currentRate).toFixed(2);
 }
-
 function reconvert() {
-  if (document.activeElement === eurInput) {
-    convertFromEur();
-  } else if (zarInput.value !== "") {
-    convertFromZar();
-  } else if (eurInput.value !== "") {
-    convertFromEur();
-  }
+  if (document.activeElement === eurInput) convertFromEur();
+  else if (zarInput.value !== "") convertFromZar();
+  else if (eurInput.value !== "") convertFromEur();
 }
-
 function renderRateInfo() {
   if (currentRate == null) {
     rateValue.textContent = "\u2014";
@@ -335,7 +299,6 @@ function renderRateInfo() {
     metaText.textContent = `Last updated ${formatTimestamp(rateTimestamp)} \u00b7 Frankfurter (ECB)`;
   }
 }
-
 async function fetchRate({ silent } = { silent: false }) {
   if (!silent) {
     refreshBtn.disabled = true;
@@ -347,12 +310,10 @@ async function fetchRate({ silent } = { silent: false }) {
     const data = await res.json();
     const rate = data.rates && data.rates.EUR;
     if (typeof rate !== "number") throw new Error("Malformed response");
-
     currentRate = rate;
     rateTimestamp = new Date().toISOString();
     isFallback = false;
     saveCache(currentRate, rateTimestamp);
-
     setStatus("live", "Live rate");
     clearError();
     renderRateInfo();
@@ -374,7 +335,6 @@ async function fetchRate({ silent } = { silent: false }) {
     refreshBtn.textContent = "Refresh rate";
   }
 }
-
 function init() {
   const cached = loadCache();
   if (cached && typeof cached.rate === "number") {
@@ -385,7 +345,6 @@ function init() {
     renderRateInfo();
   }
   fetchRate({ silent: true });
-
   zarInput.addEventListener("input", convertFromZar);
   eurInput.addEventListener("input", convertFromEur);
   refreshBtn.addEventListener("click", () => fetchRate({ silent: false }));
@@ -394,7 +353,6 @@ function init() {
     eurInput.value = "";
     zarInput.focus();
   });
-
   window.addEventListener("online", () => fetchRate({ silent: true }));
   window.addEventListener("offline", () => {
     if (currentRate != null) {
@@ -402,9 +360,7 @@ function init() {
     }
   });
 }
-
 init();
-
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("service-worker.js").catch(() => {});
