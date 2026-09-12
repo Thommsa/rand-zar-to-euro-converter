@@ -1,4 +1,4 @@
-const CACHE_NAME = "zar-eur-shell-v9";
+const CACHE_NAME = "zar-eur-shell-v10";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -26,12 +26,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-
-  // Never intercept the live rate API — let the page's own fetch handle
-  // success/failure so app.js can fall back to its cached rate correctly.
   if (url.hostname === "api.frankfurter.app") return;
-
-  // App shell: cache-first, so the app opens instantly (and offline).
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (

@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ZAR ⇄ EUR</title>
 <meta name="theme-color" content="#12213A">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="ZAR⇄EUR">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<link rel="manifest" href="manifest.json">
-<link rel="icon" href="icons/icon-192.png">
 <style>
   :root{
     --ink:       #12213A;
@@ -51,6 +45,24 @@
     padding: 28px 24px 22px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.35);
   }
+  .eyebrow{
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-mute);
+    margin: 0 0 18px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .status-dot{
+    width:7px; height:7px; border-radius:50%;
+    background: var(--text-mute);
+    flex-shrink:0;
+    transition: background 0.2s ease;
+  }
+  .status-dot.live{ background: var(--teal); box-shadow: 0 0 0 3px rgba(79,168,160,0.18); }
+  .status-dot.cached{ background: var(--gold); box-shadow: 0 0 0 3px rgba(212,162,76,0.18); }
 
   .field{
     background: var(--panel-2);
@@ -87,9 +99,9 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    margin: 12px 0;
+    margin: 4px 0;
     position:relative;
-    height: 52px;
+    height: 34px;
   }
   .swap-row::before{
     content:"";
@@ -101,31 +113,17 @@
   .swap-btn{
     position:relative;
     z-index:1;
-    width:48px;
-    height:48px;
+    width:34px; height:34px;
     border-radius:50%;
-    border: 1.5px solid rgba(212,162,76,0.4);
-    background: linear-gradient(160deg, #2c4266 0%, #1a2c48 100%);
+    border: 1px solid var(--border);
+    background: var(--panel);
     color: var(--gold);
-    font-size: 22px;
-    font-weight: 500;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    font-size: 16px;
+    display:flex; align-items:center; justify-content:center;
     cursor:pointer;
-    box-shadow:
-      0 5px 14px rgba(0,0,0,0.5),
-      0 2px 4px rgba(0,0,0,0.35),
-      inset 0 1px 1px rgba(255,255,255,0.15),
-      inset 0 -3px 6px rgba(0,0,0,0.3);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, border-color 0.15s ease;
   }
-  .swap-btn:active{
-    transform: scale(0.9) rotate(180deg);
-    box-shadow:
-      0 1px 4px rgba(0,0,0,0.45),
-      inset 0 3px 8px rgba(0,0,0,0.45);
-  }
+  .swap-btn:active{ transform: rotate(180deg) scale(0.92); }
 
   .rate-pill{
     margin-top: 18px;
@@ -150,11 +148,65 @@
     text-align:center;
     line-height:1.5;
   }
+  .refresh-btn{
+    margin-top: 14px;
+    width:100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--teal);
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor:pointer;
+  }
+  .refresh-btn:active{ background: rgba(79,168,160,0.08); }
+  .refresh-btn:disabled{ opacity: 0.5; }
+
+  .error-banner{
+    display:none;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(212,162,76,0.10);
+    border: 1px solid rgba(212,162,76,0.3);
+    color: var(--gold);
+    font-size: 12.5px;
+    text-align:center;
+  }
+
+  .coffee-btn{
+    display:block;
+    margin-top: 16px;
+    width:100%;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: none;
+    background: var(--gold);
+    color: #12213A;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-align:center;
+    text-decoration:none;
+    cursor:pointer;
+    box-shadow: 0 4px 14px rgba(212,162,76,0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  .coffee-btn:active{
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(212,162,76,0.2);
+  }
 </style>
 </head>
 <body>
 
 <div class="card">
+  <p class="eyebrow"><span class="status-dot" id="statusDot"></span><span id="statusText">Checking rate…</span></p>
+
   <div class="field">
     <label for="zarInput">South African Rand</label>
     <div class="field-row">
@@ -165,7 +217,7 @@
   </div>
 
   <div class="swap-row">
-    <button class="swap-btn" id="clearBtn" aria-label="Clear both fields" title="Clear">↺</button>
+    <button class="swap-btn" id="clearBtn" aria-label="Clear both fields" title="Clear">↻</button>
   </div>
 
   <div class="field field-eur">
@@ -182,9 +234,182 @@
     <span class="rate-value" id="rateValue">—</span>
   </div>
 
-  <p class="meta" id="metaText">Checking…</p>
+  <p class="meta" id="metaText">Loading last known rate…</p>
+
+  <button class="refresh-btn" id="refreshBtn">Refresh rate</button>
+  <div class="error-banner" id="errorBanner"></div>
+
+  <a class="coffee-btn" href="https://buy.stripe.com/fZu8wR7ZZgmk32X4YK8k800" target="_blank" rel="noopener">Buy Thomas a coffee ☕</a>
 </div>
 
-<script src="app.js"></script>
+<script>
+const API_URL = "https://api.frankfurter.app/latest?from=ZAR&to=EUR";
+const STORAGE_KEY = "zar_eur_rate_cache_v1";
+const FALLBACK_RATE = 0.0525;
+const FALLBACK_DATE = "2026-07-27T00:00:00Z";
+
+let currentRate = null;
+let rateTimestamp = null;
+let isFallback = false;
+
+const zarInput    = document.getElementById("zarInput");
+const eurInput    = document.getElementById("eurInput");
+const clearBtn    = document.getElementById("clearBtn");
+const refreshBtn  = document.getElementById("refreshBtn");
+const statusDot   = document.getElementById("statusDot");
+const statusText  = document.getElementById("statusText");
+const rateValue   = document.getElementById("rateValue");
+const metaText    = document.getElementById("metaText");
+const errorBanner = document.getElementById("errorBanner");
+
+function saveCache(rate, timestamp) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ rate, timestamp }));
+  } catch (e) {}
+}
+
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function formatTimestamp(iso) {
+  const d = new Date(iso);
+  const now = new Date();
+  const sameDay = d.toDateString() === now.toDateString();
+  const timeStr = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (sameDay) return `today at ${timeStr}`;
+  return `${d.toLocaleDateString([], { day: "numeric", month: "short" })} at ${timeStr}`;
+}
+
+function setStatus(mode, text) {
+  const cls = mode === "live" ? " live" : (mode === "cached" || mode === "fallback") ? " cached" : "";
+  statusDot.className = "status-dot" + cls;
+  statusText.textContent = text;
+}
+
+function showError(msg) {
+  errorBanner.textContent = msg;
+  errorBanner.style.display = "block";
+}
+function clearError() {
+  errorBanner.style.display = "none";
+}
+
+function convertFromZar() {
+  if (currentRate == null) return;
+  const raw = parseFloat(zarInput.value);
+  eurInput.value = isNaN(raw) ? "" : (raw * currentRate).toFixed(2);
+}
+
+function convertFromEur() {
+  if (currentRate == null) return;
+  const raw = parseFloat(eurInput.value);
+  zarInput.value = isNaN(raw) ? "" : (raw / currentRate).toFixed(2);
+}
+
+function reconvert() {
+  if (document.activeElement === eurInput) {
+    convertFromEur();
+  } else if (zarInput.value !== "") {
+    convertFromZar();
+  } else if (eurInput.value !== "") {
+    convertFromEur();
+  }
+}
+
+function renderRateInfo() {
+  if (currentRate == null) {
+    rateValue.textContent = "\u2014";
+    metaText.textContent = "No rate available yet. Connect to the internet and tap Refresh.";
+    return;
+  }
+  rateValue.textContent = `1 ZAR = ${currentRate.toFixed(5)} EUR`;
+  if (isFallback) {
+    metaText.textContent = `Built-in fallback rate (as of ${formatTimestamp(FALLBACK_DATE)}) \u2014 will update once online`;
+  } else {
+    metaText.textContent = `Last updated ${formatTimestamp(rateTimestamp)} \u00b7 Frankfurter (ECB)`;
+  }
+}
+
+async function fetchRate({ silent } = { silent: false }) {
+  if (!silent) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing\u2026";
+  }
+  try {
+    const res = await fetch(API_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("Bad response");
+    const data = await res.json();
+    const rate = data.rates && data.rates.EUR;
+    if (typeof rate !== "number") throw new Error("Malformed response");
+
+    currentRate = rate;
+    rateTimestamp = new Date().toISOString();
+    isFallback = false;
+    saveCache(currentRate, rateTimestamp);
+
+    setStatus("live", "Live rate");
+    clearError();
+    renderRateInfo();
+    reconvert();
+  } catch (err) {
+    if (currentRate == null) {
+      currentRate = FALLBACK_RATE;
+      rateTimestamp = FALLBACK_DATE;
+      isFallback = true;
+      setStatus("fallback", "No connection \u2014 using built-in fallback rate");
+      renderRateInfo();
+      reconvert();
+    } else {
+      setStatus("cached", isFallback ? "No connection \u2014 using built-in fallback rate" : "Offline \u2014 using cached rate");
+      if (!silent) showError("Couldn't refresh. Showing the last known rate instead.");
+    }
+  } finally {
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Refresh rate";
+  }
+}
+
+function init() {
+  const cached = loadCache();
+  if (cached && typeof cached.rate === "number") {
+    currentRate = cached.rate;
+    rateTimestamp = cached.timestamp;
+    isFallback = false;
+    setStatus("cached", "Using cached rate");
+    renderRateInfo();
+  }
+  fetchRate({ silent: true });
+
+  zarInput.addEventListener("input", convertFromZar);
+  eurInput.addEventListener("input", convertFromEur);
+  refreshBtn.addEventListener("click", () => fetchRate({ silent: false }));
+  clearBtn.addEventListener("click", () => {
+    zarInput.value = "";
+    eurInput.value = "";
+    zarInput.focus();
+  });
+
+  window.addEventListener("online", () => fetchRate({ silent: true }));
+  window.addEventListener("offline", () => {
+    if (currentRate != null) {
+      setStatus("cached", isFallback ? "No connection \u2014 using built-in fallback rate" : "Offline \u2014 using cached rate");
+    }
+  });
+}
+
+init();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
+  });
+}
+</script>
 </body>
 </html>
