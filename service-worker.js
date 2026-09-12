@@ -1,4 +1,4 @@
-const CACHE_NAME = "zar-eur-shell-v10";
+const CACHE_NAME = "zar-eur-shell-v11";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -26,7 +26,10 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (url.hostname === "api.frankfurter.app") return;
+
+  // Never intercept the live rate API.
+  if (url.hostname === "api.frankfurter.app" || url.hostname === "api.frankfurter.dev") return;
+
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return (
